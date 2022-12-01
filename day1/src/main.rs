@@ -3,7 +3,11 @@ use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 
 fn main() -> std::io::Result<()> {
-    part2()
+    println!("===part1===");
+    part1()?;
+    println!("===part2===");
+    part2()?;
+    Ok(())
 }
 
 fn part1() -> std::io::Result<()> {
