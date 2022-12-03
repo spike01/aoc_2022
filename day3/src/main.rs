@@ -1,7 +1,7 @@
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
-use std::collections::HashSet;
 
 fn main() -> std::io::Result<()> {
     println!("===part1===");
@@ -27,7 +27,7 @@ fn part1() -> std::io::Result<()> {
         for c in right.chars() {
             rights.insert(c);
         }
-        let add = convert(*lefts.intersection(&rights).nth(0).unwrap());
+        let add = convert(*lefts.intersection(&rights).next().unwrap());
         total += add;
     }
     println!("{}", total);
@@ -40,34 +40,40 @@ fn part2() -> std::io::Result<()> {
     let mut total = 0;
     let mut counter = 0;
 
-    let mut first= HashSet::new();
-    let mut second= HashSet::new();
-    let mut third= HashSet::new();
+    let mut first = HashSet::new();
+    let mut second = HashSet::new();
+    let mut third = HashSet::new();
 
     for line in lines?.flatten() {
         match counter {
             0 => {
-                for c in line.chars() { first.insert(c); };
+                for c in line.chars() {
+                    first.insert(c);
+                }
                 counter += 1;
-            },
+            }
             1 => {
-                for c in line.chars() { second.insert(c); };
+                for c in line.chars() {
+                    second.insert(c);
+                }
                 counter += 1;
-            },
+            }
             2 => {
-                for c in line.chars() { third.insert(c); }
+                for c in line.chars() {
+                    third.insert(c);
+                }
                 let mut temp = HashSet::new();
                 for c in first.intersection(&second) {
                     temp.insert(*c);
-                };
+                }
                 let mut second_intersect = temp.intersection(&third);
-                total += convert(*second_intersect.nth(0).unwrap());
+                total += convert(*second_intersect.next().unwrap());
                 counter = 0;
                 first.clear();
                 second.clear();
                 third.clear();
-            },
-            _ => unreachable!()
+            }
+            _ => unreachable!(),
         }
     }
 
@@ -80,7 +86,6 @@ fn convert(c: char) -> usize {
     let alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     alpha.chars().position(|x| x == c).unwrap() + 1
 }
-
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
 where
