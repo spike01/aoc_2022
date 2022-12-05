@@ -5,90 +5,114 @@ use std::path::Path;
 
 fn main() -> std::io::Result<()> {
     println!("===part1===");
-    part1()?;
+    println!("{}", part1()?);
     println!("===part2===");
-    part2()?;
+    println!("{}", part2()?);
     Ok(())
 }
 
-#[derive(Debug)]
-struct Move {
-    count: u8,
-    from: usize,
-    to: usize,
-}
-
-fn part1() -> std::io::Result<()> {
+fn part1() -> std::io::Result<String> {
     let lines = read_lines("./input.txt");
 
-    let mut in_move_section = false;
+    let mut create_stacks = true;
     let mut first_line = true;
-    let mut stack_count = 0;
-    let mut stacks = vec![VecDeque::from(["unused".to_string()])];
-
+    let mut stacks = vec![VecDeque::from(["unused".to_string()])]; // allows us to treat the stacks
+                                                                   // as 1-indexed
     for line in lines?.flatten() {
-        if line.is_empty() {
-            in_move_section = true;
-            continue;
-        }
-        if !in_move_section {
-            let mut parts = line.split("");
-            if first_line {
-                let line_length = line.len();
-                stack_count = (line_length / 4) + 1; // hacky but should work
-                for _ in 0..stack_count {
-                    stacks.push(VecDeque::new());
-                }
-                first_line = false;
-            }
-            if line.trim().starts_with('1') {
-                continue;
-            }
-
-            if let Some(letter) = parts.nth(2) {
-                if letter != " " {
-                    stacks[1].push_front(letter.to_string());
-                }
-            }
-
-            for stack in stacks.iter_mut().take(stack_count + 1).skip(2) {
-                if let Some(letter) = parts.nth(3) {
-                    if letter != " " {
-                        stack.push_front(letter.to_string());
-                    }
-                }
-            }
+        if create_stacks {
+            (create_stacks, first_line, stacks) = setup(&line, stacks, first_line);
             continue;
         }
 
-        let mut parts = line.split_whitespace();
-        let move_ = Move {
-            count: parts.nth(1).unwrap().parse::<u8>().unwrap(),
-            from: parts.nth(1).unwrap().parse::<usize>().unwrap(),
-            to: parts.nth(1).unwrap().parse::<usize>().unwrap(),
-        };
-        // push/pop each instruction
-        for _ in 0..move_.count {
-            let popped = stacks[move_.from].pop_back().unwrap();
-            stacks[move_.to].push_back(popped);
+        let (count, from, to) = parse(&line);
+
+        for _ in 0..count {
+            let popped = stacks[from].pop_back().unwrap();
+            stacks[to].push_back(popped);
         }
     }
 
-    let result: String = stacks
+    Ok(pop_stacks(stacks))
+}
+
+
+fn part2() -> std::io::Result<String> {
+    let lines = read_lines("./input.txt");
+
+    let mut create_stacks = true;
+    let mut first_line = true;
+    let mut stacks = vec![VecDeque::from(["unused".to_string()])]; // allows us to treat the stacks
+                                                                   // as 1-indexed
+    for line in lines?.flatten() {
+        if create_stacks {
+            (create_stacks, first_line, stacks) = setup(&line, stacks, first_line);
+            continue;
+        }
+
+        let (count, from, to) = parse(&line);
+
+        let mut chunk = Vec::new();
+        for _ in 0..count {
+            let popped = stacks[from].pop_back().unwrap();
+            chunk.push(popped);
+        }
+
+        while !chunk.is_empty() {
+            let popped = chunk.pop().unwrap();
+            stacks[to].push_back(popped);
+        }
+    }
+
+    Ok(pop_stacks(stacks))
+}
+
+fn setup(line: &str, mut stacks: Vec<VecDeque<String>>, first_line: bool) -> (bool, bool, Vec<VecDeque<String>>) {
+    if line.is_empty() {
+        return (false, false, stacks);
+    }
+
+    if line.trim().starts_with('1') {
+        return (true, false, stacks);
+    }
+
+    let mut parts = line.split("");
+    if first_line {
+        let stack_count = (line.len() / 4) + 1; // hacky but should work
+        for _ in 0..stack_count {
+            stacks.push(VecDeque::new());
+        }
+    }
+
+    if let Some(letter) = parts.nth(2) {
+        if letter != " " {
+            stacks[1].push_front(letter.to_string());
+        }
+    }
+
+    for stack in stacks.iter_mut().skip(2) {
+        if let Some(letter) = parts.nth(3) {
+            if letter != " " {
+                stack.push_front(letter.to_string());
+            }
+        }
+    }
+    (true, false, stacks)
+}
+
+fn parse(line: &str) -> (u8, usize, usize) {
+    let mut parts = line.split_whitespace();
+    let count = parts.nth(1).unwrap().parse::<u8>().unwrap();
+    let from = parts.nth(1).unwrap().parse::<usize>().unwrap();
+    let to = parts.nth(1).unwrap().parse::<usize>().unwrap();
+    (count, from, to)
+}
+
+fn pop_stacks(stacks: Vec<VecDeque<String>>) -> String {
+    stacks
         .into_iter()
         .skip(1)
         .map(|mut stack| stack.pop_back().unwrap())
-        .collect();
-
-    println!("{}", result);
-
-    Ok(())
-}
-
-fn part2() -> std::io::Result<()> {
-    let _lines = read_lines("./input_smol.txt");
-
-    Ok(())
+        .collect()
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>

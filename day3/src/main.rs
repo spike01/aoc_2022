@@ -11,24 +11,17 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
+const ALPHABET: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
 fn part1() -> std::io::Result<()> {
     let lines = read_lines("./input.txt");
     let mut total = 0;
     for line in lines?.flatten() {
-        let len = line.len();
-        let half = len / 2;
-
-        let mut lefts = HashSet::new();
-        let mut rights = HashSet::new();
-        let (left, right) = line.split_at(half);
-        for c in left.chars() {
-            lefts.insert(c);
-        }
-        for c in right.chars() {
-            rights.insert(c);
-        }
-        let add = convert(*lefts.intersection(&rights).next().unwrap());
-        total += add;
+        let (left, right) = line.split_at(line.len() / 2);
+        let left_set: HashSet<char> = left.chars().collect();
+        let right_set: HashSet<char> = right.chars().collect();
+        let intersection = left_set.intersection(&right_set).next().unwrap();
+        total += priority(*intersection);
     }
     println!("{}", total);
 
@@ -66,8 +59,8 @@ fn part2() -> std::io::Result<()> {
                 for c in first.intersection(&second) {
                     temp.insert(*c);
                 }
-                let mut second_intersect = temp.intersection(&third);
-                total += convert(*second_intersect.next().unwrap());
+                let mut second_intersection = temp.intersection(&third);
+                total += priority(*second_intersection.next().unwrap());
                 counter = 0;
                 first.clear();
                 second.clear();
@@ -82,9 +75,8 @@ fn part2() -> std::io::Result<()> {
     Ok(())
 }
 
-fn convert(c: char) -> usize {
-    let alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    alpha.chars().position(|x| x == c).unwrap() + 1
+fn priority(c: char) -> usize {
+    ALPHABET.chars().position(|x| x == c).unwrap() + 1
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
