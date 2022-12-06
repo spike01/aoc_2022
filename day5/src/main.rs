@@ -71,6 +71,7 @@ fn setup(line: &str, mut stacks: Vec<VecDeque<String>>, first_line: bool) -> (bo
         return (false, false, stacks);
     }
 
+    // Ignore the " 1 2 3 ... n " line
     if line.trim().starts_with('1') {
         return (true, false, stacks);
     }
@@ -83,13 +84,19 @@ fn setup(line: &str, mut stacks: Vec<VecDeque<String>>, first_line: bool) -> (bo
         }
     }
 
+    //                                  012
+    // Handle the first column - nth(2) "[X"
+    // Still not sure where the extra empty string comes from...
     if let Some(letter) = parts.nth(2) {
         if letter != " " {
             stacks[1].push_front(letter.to_string());
         }
     }
 
+    // Handle following columns - skip(2) the "unused" and first column
     for stack in stacks.iter_mut().skip(2) {
+        //                                                     0123
+        // then nth(3) - each following column is of the form "] [X"
         if let Some(letter) = parts.nth(3) {
             if letter != " " {
                 stack.push_front(letter.to_string());
@@ -101,6 +108,9 @@ fn setup(line: &str, mut stacks: Vec<VecDeque<String>>, first_line: bool) -> (bo
 
 fn parse(line: &str) -> (u8, usize, usize) {
     let mut parts = line.split_whitespace();
+
+    // nth: 0    1       0    1      0  1
+    //      move <count> from <from> to <to>
     let count = parts.nth(1).unwrap().parse::<u8>().unwrap();
     let from = parts.nth(1).unwrap().parse::<usize>().unwrap();
     let to = parts.nth(1).unwrap().parse::<usize>().unwrap();
@@ -110,7 +120,7 @@ fn parse(line: &str) -> (u8, usize, usize) {
 fn pop_stacks(stacks: Vec<VecDeque<String>>) -> String {
     stacks
         .into_iter()
-        .skip(1)
+        .skip(1) // the "unused" VecDeque
         .map(|mut stack| stack.pop_back().unwrap())
         .collect()
 }
