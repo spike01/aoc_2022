@@ -41,11 +41,9 @@ fn find_marker_position(line: &str, window_size: usize) -> Option<usize> {
             deque.pop_front();
         }
         deque.push_back(c);
-        if deque.len() == window_size {
-            let set: HashSet<char> = deque.clone().into_iter().collect();
-            if set.len() == window_size {
-                return Some(i + 1); // chars zero indexed
-            }
+        let set: HashSet<char> = deque.clone().into_iter().collect();
+        if set.len() == window_size {
+            return Some(i + 1); // chars zero indexed
         }
     }
     None
