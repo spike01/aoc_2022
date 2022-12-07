@@ -68,7 +68,7 @@ root = AocFile.new("/", "dir")
 state.filetree["/"] = root
 
 f.each_line do |l|
-  case true
+  case true # match each case with true === <boolean expression>
   when l.start_with?("$ cd")
     state.process_output if state.reading_output?
     dest = l[5..].strip
@@ -83,9 +83,17 @@ f.each_line do |l|
   end
 end
 
-if state.reading_output?
+if f.eof?
   state.process_output
 end
 
+TOTAL_FILESYSTEM_SIZE = 70000000
+MINIMUM_NEEDED_FOR_UPDATE = 30000000
+
 pp state.filetree
-pp state.all_files.select { |f| f.size < 100000 && f.dir? }.map(&:size).sum
+pp "Part 1: #{state.all_files.select { |f| f.size < 100000 && f.dir? }.map(&:size).sum}"
+unused_space = TOTAL_FILESYSTEM_SIZE - state.filetree["/"].size
+needed = MINIMUM_NEEDED_FOR_UPDATE - unused_space
+pp "Unused space: #{unused_space}"
+pp "Needed: #{needed}"
+pp "Part 2: #{state.all_files.select { |f| f.dir? && f.size >= needed}.map(&:size).min}"
