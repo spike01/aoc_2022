@@ -1,14 +1,15 @@
 class State
-  def initialize
-    @pwd = "/"
+  def initialize(root)
+    @pwd = root.name
     @dir_stack = []
-    @filetree = {}
+    @filetree = {root.name => root}
     @reading_output = false
     @output = []
     @all_files = []
   end
 
-  attr_accessor :pwd, :dir_stack, :filetree, :reading_output, :output, :all_files
+  attr_reader :filetree, :output, :all_files
+  attr_accessor :reading_output
 
   def reading_output?
     reading_output
@@ -54,7 +55,8 @@ class AocFile
     end
   end
 
-  attr_accessor :name, :dir, :tree, :size
+  attr_reader :name, :tree
+  attr_accessor :size
 
   def dir?
     @dir
@@ -63,9 +65,8 @@ end
 
 f = File.open("./input.txt", "r")
 
-state = State.new
 root = AocFile.new("/", "dir")
-state.filetree["/"] = root
+state = State.new(root)
 
 f.each_line do |l|
   case true # match each case with true === <boolean expression>
@@ -90,10 +91,10 @@ end
 TOTAL_FILESYSTEM_SIZE = 70000000
 MINIMUM_NEEDED_FOR_UPDATE = 30000000
 
-pp state.filetree
-pp "Part 1: #{state.all_files.select { |f| f.size < 100000 && f.dir? }.map(&:size).sum}"
+p "Part 1: #{state.all_files.select { |f| f.size < 100000 && f.dir? }.map(&:size).sum}"
 unused_space = TOTAL_FILESYSTEM_SIZE - state.filetree["/"].size
 needed = MINIMUM_NEEDED_FOR_UPDATE - unused_space
-pp "Unused space: #{unused_space}"
-pp "Needed: #{needed}"
-pp "Part 2: #{state.all_files.select { |f| f.dir? && f.size >= needed}.map(&:size).min}"
+p "===="
+p "Unused space: #{unused_space}"
+p "Needed: #{needed}"
+p "Part 2: #{state.all_files.select { |f| f.dir? && f.size >= needed}.map(&:size).min}"
