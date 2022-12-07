@@ -8,11 +8,10 @@ class State
     @all_files = []
   end
 
-  attr_reader :filetree, :output, :all_files
-  attr_accessor :reading_output
+  attr_reader :all_files
 
   def reading_output?
-    reading_output
+    @reading_output
   end
 
   def cd(dest)
@@ -24,21 +23,39 @@ class State
     @pwd = dest
   end
 
+  def process_line(line)
+    case true # match each case with true === <boolean expression>
+    when line.start_with?("$ cd")
+      process_output if reading_output?
+      dest = line[5..].strip
+      cd(dest)
+    when line.start_with?("$ ls")
+      @reading_output = true
+    when reading_output? && !line.start_with?("$")
+      @output.push(line.strip)
+    end
+  end
+
   def process_output
     @output.each do |o|
       info, name = o.split(" ").map(&:strip)
       file = AocFile.new(name, info)
 
-      # insert files
       cwd = @dir_stack.reduce(@filetree) do |cwd, popd|
         cwd[popd].size += file.size
         cwd[popd].tree
       end
+
       all_files.push(file)
       cwd[name] = file
     end
+
     @output = []
     @reading_output = false
+  end
+
+  def root
+    @filetree["/"]
   end
 end
 
@@ -69,19 +86,7 @@ root = AocFile.new("/", "dir")
 state = State.new(root)
 
 f.each_line do |l|
-  case true # match each case with true === <boolean expression>
-  when l.start_with?("$ cd")
-    state.process_output if state.reading_output?
-    dest = l[5..].strip
-    state.cd(dest);
-    next
-  when l.start_with?("$ ls")
-    state.reading_output = true;
-    next
-  when state.reading_output? && !l.start_with?("$")
-    state.output.push(l.strip);
-    next
-  end
+  state.process_line(l)
 end
 
 if f.eof?
@@ -90,11 +95,20 @@ end
 
 TOTAL_FILESYSTEM_SIZE = 70000000
 MINIMUM_NEEDED_FOR_UPDATE = 30000000
+FILE_SIZE_THRESHOLD = 100_000
 
-p "Part 1: #{state.all_files.select { |f| f.size < 100000 && f.dir? }.map(&:size).sum}"
-unused_space = TOTAL_FILESYSTEM_SIZE - state.filetree["/"].size
+puts "Part 1: #{state.all_files
+  .select { |f| f.size < FILE_SIZE_THRESHOLD && f.dir? }
+  .map(&:size)
+  .sum}"
+
+puts "===="
+
+unused_space = TOTAL_FILESYSTEM_SIZE - state.root.size
 needed = MINIMUM_NEEDED_FOR_UPDATE - unused_space
-p "===="
-p "Unused space: #{unused_space}"
-p "Needed: #{needed}"
-p "Part 2: #{state.all_files.select { |f| f.dir? && f.size >= needed}.map(&:size).min}"
+puts "Unused space: #{unused_space}"
+puts "Needed: #{needed}"
+puts "Part 2: #{state.all_files
+  .select { |f| f.dir? && f.size >= needed}
+  .map(&:size)
+  .min}"
