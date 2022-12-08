@@ -41,29 +41,20 @@ fn directory_sizes(lines: std::io::Lines<BufReader<File>>) -> Vec<i32> {
     let mut file_sizes: Vec<i32> = Vec::new();
 
     for line in lines.flatten() {
-        if line.starts_with('$') {
-            let command = &line[2..4];
-            match command {
-                "cd" => {
-                    let dest = &line[5..];
-                    if dest == ".." {
-                        if let Some(size) = size_stack.pop() {
-                            file_sizes.push(size);
-                        }
-                        continue;
-                    }
-                    size_stack.push(0);
+        match line.as_str() {
+            "$ cd .." => {
+                if let Some(size) = size_stack.pop() {
+                    file_sizes.push(size);
                 }
-                "ls" => continue,
-                _ => unreachable!(),
             }
-            continue;
-        }
-
-        if let Some((info, _)) = line.split_once(' ') {
-            if info != "dir" {
-                for f in size_stack.iter_mut() {
-                    *f += info.parse::<i32>().expect("should fit!");
+            "$ ls" => continue,
+            command if command.starts_with("dir") => continue,
+            command if command.starts_with("$ cd ") => size_stack.push(0),
+            command => {
+                if let Some((info, _)) = command.split_once(' ') {
+                    for f in size_stack.iter_mut() {
+                        *f += info.parse::<i32>().expect("should fit!");
+                    }
                 }
             }
         }
