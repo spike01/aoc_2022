@@ -30,28 +30,30 @@ fn part1() -> std::io::Result<usize> {
 }
 
 fn build_columns(line: &str, mut columns: Vec<Vec<char>>) -> Vec<Vec<char>> {
-    for (j, c) in line.chars().enumerate() {
-        if let Some(col) = columns.get(j) {
-            let mut col = col.clone();
-            col.push(c);
-            columns[j] = col
-        } else {
-            let col = vec![c];
-            columns.push(col.clone());
+    line.chars().enumerate().for_each(|(j, c)| {
+        match columns.get(j) {
+            Some(col) => {
+                let mut col = col.clone(); // blah
+                col.push(c);
+                columns[j] = col
+            },
+            None => columns.push(vec![c].clone())
         }
-    }
+    });
     columns
 }
 
 fn count_row(line: &str, seen: &mut HashSet<(usize, usize)>, y: usize) {
-    let mut max_seen = '/'; // you don't wanna know, trust me
+    // you don't wanna know, trust me (ok fine it's the char where '/' < '0' == true, I was too
+    // lazy to parse everything into numbers myself)
+    let mut max_seen = '/';
 
-    let mut reverse_index = Vec::new(); // *silent screaming*
-    for (x, _) in line.chars().clone().enumerate() {
+    // *silent screaming* - you can't call .rev().enumerate() on chars() because "the trait
+    // `ExactSizeIterator` is not implemented for `Chars<'_>`" ;.;
+    let mut reverse_index = Vec::new();
+
+    for (x, c) in line.chars().enumerate() {
         reverse_index.push(x);
-    }
-
-    for (x, c) in line.chars().clone().enumerate() {
         if max_seen >= c {
             continue;
         }
@@ -77,23 +79,23 @@ fn count_row(line: &str, seen: &mut HashSet<(usize, usize)>, y: usize) {
 fn count_column(line: Vec<char>, seen: &mut HashSet<(usize, usize)>, x: usize) {
     let mut max_seen = '/';
 
-    for (y, c) in line.clone().into_iter().enumerate() {
-        if max_seen >= c {
+    for (y, c) in line.iter().enumerate() {
+        if max_seen >= *c {
             continue;
         }
-        if c > max_seen {
-            max_seen = c;
+        if *c > max_seen {
+            max_seen = *c;
         }
         seen.insert((x, y));
     }
 
     max_seen = '/';
-    for (y, c) in line.into_iter().enumerate().rev() {
-        if max_seen >= c {
+    for (y, c) in line.iter().enumerate().rev() {
+        if max_seen >= *c {
             continue;
         }
-        if c > max_seen {
-            max_seen = c;
+        if *c > max_seen {
+            max_seen = *c;
         }
         seen.insert((x, y));
     }
