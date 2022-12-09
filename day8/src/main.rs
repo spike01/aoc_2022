@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashSet};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::iter::Rev;
@@ -35,7 +35,7 @@ fn part2() -> std::io::Result<usize> {
     let lines = read_lines("./input.txt")?;
 
     let mut columns: Vec<Vec<char>> = Vec::new();
-    let mut scenic_scores: HashMap<(usize, usize), usize> = HashMap::new();
+    let mut scenic_scores: Vec<usize> = Vec::new();
 
     for line in lines.flatten() {
         columns = build_columns(&line, columns);
@@ -55,14 +55,21 @@ fn part2() -> std::io::Result<usize> {
 
             let score = left * right * up * down;
 
-            *scenic_scores.entry((x, y)).or_insert(0) += score;
+            scenic_scores.push(score);
         }
     }
 
-    Ok(*scenic_scores.values().max().expect("a solution exists"))
+    Ok(*scenic_scores.iter().max().expect("a solution should exist"))
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+enum Direction {
+    Left,
+    Right,
+    Up,
+    Down,
+}
+
+#[derive(Debug, PartialEq)]
 struct Point {
     x: usize,
     y: usize,
@@ -89,60 +96,34 @@ impl Point {
 
     fn look(&self, direction: Direction, columns: &[Vec<char>]) -> usize {
         let mut score: usize = 0;
-        let x = self.x;
-        let y = self.y;
-        let height = self.height;
 
         match direction {
             Direction::Left => {
-                for i in self.left() {
-                    score += 1;
-                    let next_height = columns[i][y];
-                    if next_height >= height {
-                        break;
-                    }
-                }
+                self.left()
+                    .take_while(|i| { score += 1; self.height > columns[*i][self.y] })
+                    .count();
                 score
             }
             Direction::Right => {
-                for i in self.right() {
-                    score += 1;
-                    let next_height = columns[i][y];
-                    if next_height >= height {
-                        break;
-                    }
-                }
+                self.right()
+                    .take_while(|i| { score += 1; self.height > columns[*i][self.y] })
+                    .count();
                 score
             }
             Direction::Up => {
-                for i in self.up() {
-                    score += 1;
-                    let next_height = columns[x][i];
-                    if next_height >= height {
-                        break;
-                    }
-                }
+                self.up()
+                    .take_while(|i| { score += 1; self.height > columns[self.x][*i] })
+                    .count();
                 score
             }
             Direction::Down => {
-                for i in self.down() {
-                    score += 1;
-                    let next_height = columns[x][i];
-                    if next_height >= height {
-                        break;
-                    }
-                }
+                self.down()
+                    .take_while(|i| { score += 1; self.height > columns[self.x][*i] })
+                    .count();
                 score
             }
         }
     }
-}
-
-enum Direction {
-    Left,
-    Right,
-    Up,
-    Down,
 }
 
 fn build_columns(line: &str, mut columns: Vec<Vec<char>>) -> Vec<Vec<char>> {
