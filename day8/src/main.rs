@@ -45,6 +45,7 @@ fn part2() -> std::io::Result<usize> {
             let right = look(Direction::Right, x, y, &columns);
             let up = look(Direction::Up, x, y, &columns);
             let down = look(Direction::Down, x, y, &columns);
+
             let score = left * right * up * down;
 
             *scenic_scores.entry((x, y)).or_insert(0) += score;
@@ -63,9 +64,10 @@ enum Direction {
 
 fn look(direction: Direction, x: usize, y: usize, columns: &Vec<Vec<char>>) -> usize {
     let mut score: usize = 0;
+    let height = columns[x][y];
+
     match direction {
         Direction::Left => {
-            let height = columns[x][y];
             for i in (0..x).rev() {
                 score += 1;
                 let next_height = columns[i][y];
@@ -76,7 +78,6 @@ fn look(direction: Direction, x: usize, y: usize, columns: &Vec<Vec<char>>) -> u
             score
         }
         Direction::Right => {
-            let height = columns[x][y];
             for col in columns.iter().skip(x + 1) {
                 score += 1;
                 let next_height = col[y];
@@ -87,7 +88,6 @@ fn look(direction: Direction, x: usize, y: usize, columns: &Vec<Vec<char>>) -> u
             score
         }
         Direction::Up => {
-            let height = columns[x][y];
             for i in (0..y).rev() {
                 score += 1;
                 let next_height = columns[x][i];
@@ -98,7 +98,6 @@ fn look(direction: Direction, x: usize, y: usize, columns: &Vec<Vec<char>>) -> u
             score
         }
         Direction::Down => {
-            let height = columns[x][y];
             for i in (y + 1)..columns.len() {
                 score += 1;
                 let next_height = columns[x][i];
