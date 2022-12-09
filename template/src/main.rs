@@ -11,13 +11,21 @@ fn main() -> std::io::Result<()> {
 }
 
 fn part1() -> std::io::Result<()> {
-    let _lines = read_lines("./input_smol.txt");
+    let lines = read_lines("./input_smol.txt")?;
+
+    for line in lines.flatten() {
+        println!("{line}");
+    }
 
     Ok(())
 }
 
 fn part2() -> std::io::Result<()> {
-    let _lines = read_lines("./input_smol.txt");
+    let lines = read_lines("./input_smol.txt")?;
+
+    for line in lines.flatten() {
+        println!("{line}");
+    }
 
     Ok(())
 }
