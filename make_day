@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+    echo "Usage:" >&2
+    echo "  ./make_day <day>" >&2
+    exit 2
+fi
+
+DAY=$1
+
+cp -r template "$DAY"
+sed "s/\*CHANGE-ME\*/$DAY/" template/Cargo.toml.template > "$DAY"/Cargo.toml
+rm "$DAY"/Cargo.toml.template
