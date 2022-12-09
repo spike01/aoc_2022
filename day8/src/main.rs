@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
+use std::iter::Rev;
+use std::ops::Range;
 use std::path::Path;
 
 fn main() -> std::io::Result<()> {
@@ -39,12 +41,17 @@ fn part2() -> std::io::Result<usize> {
         columns = build_columns(&line, columns);
     }
 
-    for (y, col) in columns.iter().enumerate() {
-        for (x, _) in col.iter().enumerate() {
-            let left = look(Direction::Left, x, y, &columns);
-            let right = look(Direction::Right, x, y, &columns);
-            let up = look(Direction::Up, x, y, &columns);
-            let down = look(Direction::Down, x, y, &columns);
+    for (y, c) in columns.iter().enumerate() {
+        for (x, _) in c.iter().enumerate() {
+            let max = columns.len();
+            let height = columns[x][y];
+
+            let p = Point { x, y, height, max };
+
+            let left = p.look(Direction::Left, &columns);
+            let right = p.look(Direction::Right, &columns);
+            let up = p.look(Direction::Up, &columns);
+            let down = p.look(Direction::Down, &columns);
 
             let score = left * right * up * down;
 
@@ -55,59 +62,87 @@ fn part2() -> std::io::Result<usize> {
     Ok(*scenic_scores.values().max().expect("a solution exists"))
 }
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+struct Point {
+    x: usize,
+    y: usize,
+    height: char,
+    max: usize,
+}
+
+impl Point {
+    fn left(&self) -> Rev<Range<usize>> {
+        (0..self.x).rev()
+    }
+
+    fn right(&self) -> Range<usize> {
+        (self.x + 1)..self.max
+    }
+
+    fn up(&self) -> Rev<Range<usize>> {
+        (0..self.y).rev()
+    }
+
+    fn down(&self) -> Range<usize> {
+        (self.y + 1)..self.max
+    }
+
+    fn look(&self, direction: Direction, columns: &[Vec<char>]) -> usize {
+        let mut score: usize = 0;
+        let x = self.x;
+        let y = self.y;
+        let height = self.height;
+
+        match direction {
+            Direction::Left => {
+                for i in self.left() {
+                    score += 1;
+                    let next_height = columns[i][y];
+                    if next_height >= height {
+                        break;
+                    }
+                }
+                score
+            }
+            Direction::Right => {
+                for i in self.right() {
+                    score += 1;
+                    let next_height = columns[i][y];
+                    if next_height >= height {
+                        break;
+                    }
+                }
+                score
+            }
+            Direction::Up => {
+                for i in self.up() {
+                    score += 1;
+                    let next_height = columns[x][i];
+                    if next_height >= height {
+                        break;
+                    }
+                }
+                score
+            }
+            Direction::Down => {
+                for i in self.down() {
+                    score += 1;
+                    let next_height = columns[x][i];
+                    if next_height >= height {
+                        break;
+                    }
+                }
+                score
+            }
+        }
+    }
+}
+
 enum Direction {
     Left,
     Right,
     Up,
     Down,
-}
-
-fn look(direction: Direction, x: usize, y: usize, columns: &Vec<Vec<char>>) -> usize {
-    let mut score: usize = 0;
-    let height = columns[x][y];
-
-    match direction {
-        Direction::Left => {
-            for i in (0..x).rev() {
-                score += 1;
-                let next_height = columns[i][y];
-                if next_height >= height {
-                    break;
-                }
-            }
-            score
-        }
-        Direction::Right => {
-            for col in columns.iter().skip(x + 1) {
-                score += 1;
-                let next_height = col[y];
-                if next_height >= height {
-                    break;
-                }
-            }
-            score
-        }
-        Direction::Up => {
-            for i in (0..y).rev() {
-                score += 1;
-                let next_height = columns[x][i];
-                if next_height >= height {
-                    break;
-                }
-            }
-            score
-        }
-        Direction::Down => {
-            for i in (y + 1)..columns.len() {
-                score += 1;
-                let next_height = columns[x][i];
-                if next_height >= height {
-                    break;
-                }
-            }
-            score
-        }
-    }
 }
 
 fn build_columns(line: &str, mut columns: Vec<Vec<char>>) -> Vec<Vec<char>> {
@@ -127,56 +162,56 @@ fn build_columns(line: &str, mut columns: Vec<Vec<char>>) -> Vec<Vec<char>> {
 fn count_row(line: &str, seen: &mut HashSet<(usize, usize)>, y: usize) {
     // you don't wanna know, trust me (ok fine it's the char where '/' < '0' == true, I was too
     // lazy to parse everything into numbers myself)
-    let mut max_seen = '/';
+    let mut max_height = '/';
 
     // *silent screaming* - you can't call .rev().enumerate() on chars() because "the trait
     // `ExactSizeIterator` is not implemented for `Chars<'_>`" ;.;
     let mut reverse_index = Vec::new();
 
-    for (x, c) in line.chars().enumerate() {
+    for (x, current_height) in line.chars().enumerate() {
         reverse_index.push(x);
-        if max_seen >= c {
+        if max_height >= current_height {
             continue;
         }
-        if c > max_seen {
-            max_seen = c;
+        if current_height > max_height {
+            max_height = current_height;
         }
         seen.insert((x, y));
     }
 
-    max_seen = '/';
-    for c in line.chars().rev() {
+    max_height = '/';
+    for current_height in line.chars().rev() {
         let x = reverse_index.pop().unwrap();
-        if max_seen >= c {
+        if max_height >= current_height {
             continue;
         }
-        if c > max_seen {
-            max_seen = c;
+        if current_height > max_height {
+            max_height = current_height;
         }
         seen.insert((x, y));
     }
 }
 
 fn count_column(col: Vec<char>, seen: &mut HashSet<(usize, usize)>, x: usize) {
-    let mut max_seen = '/';
+    let mut max_height = '/';
 
-    for (y, c) in col.iter().enumerate() {
-        if max_seen >= *c {
+    for (y, current_height) in col.iter().enumerate() {
+        if max_height >= *current_height {
             continue;
         }
-        if *c > max_seen {
-            max_seen = *c;
+        if *current_height > max_height {
+            max_height = *current_height;
         }
         seen.insert((x, y));
     }
 
-    max_seen = '/';
-    for (y, c) in col.iter().enumerate().rev() {
-        if max_seen >= *c {
+    max_height = '/';
+    for (y, current_height) in col.iter().enumerate().rev() {
+        if max_height >= *current_height {
             continue;
         }
-        if *c > max_seen {
-            max_seen = *c;
+        if *current_height > max_height {
+            max_height = *current_height;
         }
         seen.insert((x, y));
     }
