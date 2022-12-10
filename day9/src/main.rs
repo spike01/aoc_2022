@@ -183,7 +183,9 @@ impl Rope {
         self.tail_visited.len()
     }
 
-    fn print_state(&self) {
+    // can only be used on smol inputs, I haven't written the logic to dynamically calculate the
+    // board size correctly
+    fn print_state_smol(&self) {
         let mut board = vec![
             vec!['.', '.', '.', '.', '.', '.'],
             vec!['.', '.', '.', '.', '.', '.'],
