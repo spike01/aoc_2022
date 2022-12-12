@@ -8,7 +8,7 @@ fn main() -> std::io::Result<()> {
     println!("===part1===");
     println!("{}", part1()?);
     println!("===part2===");
-    part2()?;
+    println!("{}", part2()?);
     Ok(())
 }
 
@@ -16,14 +16,12 @@ fn part1() -> std::io::Result<usize> {
     let lines = read_lines("./input.txt")?;
 
     let head = Position { x: 0, y: 0 };
-    let tail = Position { x: 0, y: 0 };
-    let head_visited = HashSet::new();
+    let tails = vec![Position { x: 0, y: 0 }];
     let tail_visited = HashSet::new();
 
     let mut rope = Rope {
         head,
-        tail,
-        head_visited,
+        tails,
         tail_visited,
     };
 
@@ -39,10 +37,39 @@ fn part1() -> std::io::Result<usize> {
     Ok(rope.tail_visited_count())
 }
 
-fn part2() -> std::io::Result<()> {
-    let _lines = read_lines("./input_smol.txt");
+fn part2() -> std::io::Result<usize> {
+    let lines = read_lines("./input.txt")?;
 
-    Ok(())
+    let head = Position { x: 0, y: 0 };
+    let tails = vec![
+        Position { x: 0, y: 0 },
+        Position { x: 0, y: 0 },
+        Position { x: 0, y: 0 },
+        Position { x: 0, y: 0 },
+        Position { x: 0, y: 0 },
+        Position { x: 0, y: 0 },
+        Position { x: 0, y: 0 },
+        Position { x: 0, y: 0 },
+        Position { x: 0, y: 0 },
+    ];
+    let tail_visited = HashSet::new();
+
+    let mut rope = Rope {
+        head,
+        tails,
+        tail_visited,
+    };
+
+    for line in lines.flatten() {
+        if let Some((left, right)) = line.split_once(' ') {
+            let direction = Direction::from_str(left).expect("Should be one of LRUD");
+            let steps = right.parse::<usize>().expect("Should be parsable");
+
+            rope.apply(direction, steps);
+        }
+    }
+
+    Ok(rope.tail_visited_count())
 }
 
 #[derive(Debug)]
@@ -83,14 +110,12 @@ impl Position {
 #[derive(Debug)]
 struct Rope {
     head: Position,
-    tail: Position,
-    head_visited: HashSet<Position>,
+    tails: Vec<Position>,
     tail_visited: HashSet<Position>,
 }
 
 impl Rope {
     fn apply(&mut self, direction: Direction, steps: usize) {
-        println!("{direction:?} {steps}");
         match direction {
             Direction::Left => self.move_head(-1, 0, steps),
             Direction::Right => self.move_head(1, 0, steps),
@@ -102,107 +127,91 @@ impl Rope {
     fn move_head(&mut self, x: i32, y: i32, steps: usize) {
         for _ in 1..=steps {
             self.head.update(x, y);
-            println!("head at: {:?}", self.head);
-            self.head_visited.insert(self.head);
-            self.update_tail();
-            //self.print_state();
+            self.update_tails();
         }
     }
 
-    fn update_tail(&mut self) {
-        match (self.head.x - self.tail.x, self.head.y - self.tail.y) {
-            // check head is +2/-2 in any x/y axis
-            // left
-            (-2, 0) => self.tail.update(-1, 0),
-            // right
-            // .....    .....    .....
-            // .TH.. -> .T.H. -> ..TH.
-            // .....    .....    .....
-            (2, 0) => self.tail.update(1, 0),
+    fn update_tails(&mut self) {
+        let mut current_head = self.head;
+        let len = self.tails.len();
+        for (i, tail) in self.tails.iter_mut().enumerate() {
+            match (current_head.x - tail.x, current_head.y - tail.y) {
+                // check head is +2/-2 in any x/y axis
+                // left
+                (-2, 0) => tail.update(-1, 0),
+                // right
+                // .....    .....    .....
+                // .TH.. -> .T.H. -> ..TH.
+                // .....    .....    .....
+                (2, 0) => tail.update(1, 0),
 
-            // up
-            (0, 2) => self.tail.update(0, 1),
+                // up
+                (0, 2) => tail.update(0, 1),
 
-            // down
-            // ...    ...    ...
-            // .T.    .T.    ...
-            // .H. -> ... -> .T.
-            // ...    .H.    .H.
-            // ...    ...    ...
-            (0, -2) => self.tail.update(0, -1),
+                // down
+                // ...    ...    ...
+                // .T.    .T.    ...
+                // .H. -> ... -> .T.
+                // ...    .H.    .H.
+                // ...    ...    ...
+                (0, -2) => tail.update(0, -1),
 
-            // check head diagonals:
-            // ......
-            // .H.H..
-            // H...H.
-            // ..T...
-            // H...H.
-            // .H.H..
+                // check head diagonals:
+                // ......
+                // .H.H..
+                // H...H.
+                // ..T...
+                // H...H.
+                // .H.H..
 
-            // 1 up, 2 left
-            (-2, 1) => self.tail.update(-1, 1),
-            // 1 up, 2 right
-            (2, 1) => self.tail.update(1, 1),
-            // 1 down, 2 left
-            (-2, -1) => self.tail.update(-1, -1),
-            // 1 down, 2 right
-            (2, -1) => self.tail.update(1, -1),
+                // 1 up, 2 left
+                (-2, 1) => tail.update(-1, 1),
+                // 1 up, 2 right
+                (2, 1) => tail.update(1, 1),
+                // 1 down, 2 left
+                (-2, -1) => tail.update(-1, -1),
+                // 1 down, 2 right
+                (2, -1) => tail.update(1, -1),
 
-            // Same moves, but different head position
-            // ......
-            // .H.H..
-            // H...H.
-            // ..T...
-            // H...H.
-            // .H.H..
-            // 2 up, 1 left
-            (-1, 2) => self.tail.update(-1, 1),
-            // 2 up, 1 right
-            // .....    .....    .....
-            // .....    ..H..    ..H..
-            // ..H.. -> ..... -> ..T..
-            // .T...    .T...    .....
-            // .....    .....    .....
-            (1, 2) => self.tail.update(1, 1),
-            // 2 down, 1 left
-            (-1, -2) => self.tail.update(-1, -1),
-            // 2 down, 1 right
-            (1, -2) => self.tail.update(1, -1),
+                // Same moves, but different head position
+                // ......
+                // .H.H..
+                // H...H.
+                // ..T...
+                // H...H.
+                // .H.H..
+                // 2 up, 1 left
+                (-1, 2) => tail.update(-1, 1),
+                // 2 up, 1 right
+                // .....    .....    .....
+                // .....    ..H..    ..H..
+                // ..H.. -> ..... -> ..T..
+                // .T...    .T...    .....
+                // .....    .....    .....
+                (1, 2) => tail.update(1, 1),
+                // 2 down, 1 left
+                (-1, -2) => tail.update(-1, -1),
+                // 2 down, 1 right
+                (1, -2) => tail.update(1, -1),
 
-            _ => (), // staying still
+                // Sudden jumps (+/-2, +/-2) away
+                (2, 2) => tail.update(1, 1),
+                (2, -2) => tail.update(1, -1),
+                (-2, -2) => tail.update(-1, -1),
+                (-2, 2) => tail.update(-1, 1),
+
+                _ => (), // staying still
+            }
+
+            if i == len - 1 { // last tail
+                self.tail_visited.insert(*tail);
+            }
+            current_head = *tail;
         }
-        println!("tail at: {:?}", self.tail);
-        self.tail_visited.insert(self.tail);
-    }
-
-    fn head_visited_count(&self) -> usize {
-        self.head_visited.len()
     }
 
     fn tail_visited_count(&self) -> usize {
         self.tail_visited.len()
-    }
-
-    // can only be used on smol inputs, I haven't written the logic to dynamically calculate the
-    // board size correctly
-    fn print_state_smol(&self) {
-        let mut board = vec![
-            vec!['.', '.', '.', '.', '.', '.'],
-            vec!['.', '.', '.', '.', '.', '.'],
-            vec!['.', '.', '.', '.', '.', '.'],
-            vec!['.', '.', '.', '.', '.', '.'],
-            vec!['.', '.', '.', '.', '.', '.'],
-            vec!['.', '.', '.', '.', '.', '.'],
-            vec!['.', '.', '.', '.', '.', '.'],
-            vec!['.', '.', '.', '.', '.', '.'],
-            vec!['.', '.', '.', '.', '.', '.'],
-            vec!['.', '.', '.', '.', '.', '.'],
-        ];
-        board[self.head.x as usize][self.head.y as usize] = 'H';
-        board[self.tail.x as usize][self.tail.y as usize] = 'T';
-        for row in board.iter().rev() {
-            println!("{:?}", row);
-        }
     }
 }
 
