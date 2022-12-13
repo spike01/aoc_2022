@@ -1,7 +1,7 @@
+use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
-use std::collections::VecDeque;
 
 fn main() -> std::io::Result<()> {
     println!("===part1===");
@@ -26,9 +26,9 @@ fn part1() -> std::io::Result<i32> {
             Some(("addx", x)) => {
                 cycles.push_back(0);
                 cycles.push_back(x.parse::<i32>().unwrap());
-            },
+            }
             None => cycles.push_back(0),
-            Some((_, _)) => unreachable!()
+            Some((_, _)) => unreachable!(),
         }
     }
 
@@ -51,12 +51,54 @@ fn part1() -> std::io::Result<i32> {
 }
 
 fn part2() -> std::io::Result<()> {
-    let lines = read_lines("./input_smol.txt")?;
+    let lines = read_lines("./input.txt")?;
+
+    let mut register: i32 = 1;
+    let mut counter: usize = 0;
+
+    let mut output: Vec<char> = Vec::new();
+    let mut cycles: VecDeque<i32> = VecDeque::new();
 
     for line in lines.flatten() {
-        println!("{line}");
+        match line.split_once(' ') {
+            Some(("addx", x)) => {
+                cycles.push_back(0);
+                cycles.push_back(x.parse::<i32>().unwrap());
+            }
+            None => cycles.push_back(0),
+            Some((_, _)) => unreachable!(),
+        }
     }
 
+
+    while counter <= 240 {
+        let sprite_position = vec![register - 1, register, register + 1];
+
+        match counter {
+            _ if sprite_position.contains(&(counter as i32 % 40)) => output.push('#'),
+            _ => output.push('.')
+        }
+
+        counter += 1;
+
+        if let Some(tick) = cycles.pop_front() {
+            register += tick;
+        }
+    }
+
+    let line_1: String = output[0..39].into_iter().collect();
+    let line_2: String = output[40..79].into_iter().collect();
+    let line_3: String = output[80..119].into_iter().collect();
+    let line_4: String = output[120..159].into_iter().collect();
+    let line_5: String = output[160..199].into_iter().collect();
+    let line_6: String = output[200..239].into_iter().collect();
+
+    println!("{}", line_1);
+    println!("{}", line_2);
+    println!("{}", line_3);
+    println!("{}", line_4);
+    println!("{}", line_5);
+    println!("{}", line_6);
     Ok(())
 }
 

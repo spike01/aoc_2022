@@ -203,7 +203,8 @@ impl Rope {
                 _ => (), // staying still
             }
 
-            if i == len - 1 { // last tail
+            if i == len - 1 {
+                // last tail
                 self.tail_visited.insert(*tail);
             }
             current_head = *tail;
