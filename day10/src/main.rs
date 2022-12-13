@@ -86,12 +86,12 @@ fn part2() -> std::io::Result<()> {
         }
     }
 
-    let line_1: String = output[0..39].into_iter().collect();
-    let line_2: String = output[40..79].into_iter().collect();
-    let line_3: String = output[80..119].into_iter().collect();
-    let line_4: String = output[120..159].into_iter().collect();
-    let line_5: String = output[160..199].into_iter().collect();
-    let line_6: String = output[200..239].into_iter().collect();
+    let line_1: String = output[0..39].iter().collect();
+    let line_2: String = output[40..79].iter().collect();
+    let line_3: String = output[80..119].iter().collect();
+    let line_4: String = output[120..159].iter().collect();
+    let line_5: String = output[160..199].iter().collect();
+    let line_6: String = output[200..239].iter().collect();
 
     println!("{}", line_1);
     println!("{}", line_2);
