@@ -6,7 +6,7 @@ fn main() -> std::io::Result<()> {
     println!("===part1===");
     println!("{}", part1()?);
     println!("===part2===");
-    part2()?;
+    println!("{}", part2()?);
     Ok(())
 }
 
@@ -49,27 +49,33 @@ struct Monkey {
     if_false: usize,
 }
 
+#[derive(PartialEq, Clone, Copy)]
+enum Worry {
+    Reduced,
+    Unreduced,
+}
+
 impl Monkey {
-    fn moves(&self) -> Vec<(usize, i64)> {
+    fn moves(&self, worry: Worry, modulus: i64) -> Vec<(usize, i64)> {
         self.items
-            .clone()
-            .into_iter()
+            .iter()
             .map(|item| {
-                let thrown = self.inspect(item);
+                let mut thrown = self.inspect(*item, worry);
                 let dest = self.test_divisible(thrown);
+                if worry == Worry::Unreduced {
+                    thrown %= modulus;
+                }
                 (dest, thrown)
             })
             .collect()
     }
 
-    fn inspect(&self, item: i64) -> i64 {
-        println!("  Monkey inspects an item with a worry level of {}", item);
+    fn inspect(&self, item: i64, worry: Worry) -> i64 {
         let inspection_result = self.apply_operation(item);
-        println!(
-            "    Monkey gets bored with item. Worry level is divided by 3 to {}.",
-            inspection_result / 3
-        );
-        inspection_result / 3
+        match worry {
+            Worry::Reduced => inspection_result / 3,
+            Worry::Unreduced => inspection_result,
+        }
     }
 
     fn apply_operation(&self, item: i64) -> i64 {
@@ -78,55 +84,17 @@ impl Monkey {
             Operand::Number(i) => i,
         };
         match &self.operation.sign {
-            Sign::Plus => {
-                println!(
-                    "    Worry level increases by {operand} to {}.",
-                    item + operand
-                );
-                item + operand
-            }
-            Sign::Minus => {
-                println!(
-                    "    Worry level decreases by {operand} to {}.",
-                    item - operand
-                );
-                item - operand
-            }
-            Sign::Divide => {
-                println!(
-                    "    Worry level is divided by {operand} to {}.",
-                    item / operand
-                );
-                item / operand
-            }
-            Sign::Multiply => {
-                println!(
-                    "    Worry level is multiplied by {operand} to {}.",
-                    item * operand
-                );
-                item * operand
-            }
+            Sign::Plus => item + operand,
+            Sign::Minus => item - operand,
+            Sign::Divide => item / operand,
+            Sign::Multiply => item * operand,
         }
     }
 
     fn test_divisible(&self, item: i64) -> usize {
         match item % self.test == 0 {
-            true => {
-                println!("    Current worry level is divisible by {}", self.test);
-                println!(
-                    "    Item with worry level {item} is thrown to monkey {}",
-                    self.if_true
-                );
-                self.if_true
-            }
-            false => {
-                println!("    Current worry level is not divisible by {}", self.test);
-                println!(
-                    "    Item with worry level {item} is thrown to monkey {}",
-                    self.if_false
-                );
-                self.if_false
-            }
+            true => self.if_true,
+            false => self.if_false,
         }
     }
 
@@ -140,12 +108,10 @@ fn part1() -> std::io::Result<i64> {
     let mut monkeys = parse_monkeys(lines);
     let mut counts = vec![0; monkeys.len()];
 
-    for i in 1..=20 {
-        println!("Turn {i}:");
-
+    for _ in 1..=20 {
         for i in 0..monkeys.len() {
             let new_monkey = monkeys[i].clone();
-            let moves = new_monkey.moves();
+            let moves = new_monkey.moves(Worry::Reduced, 0);
             monkeys[i].items.clear();
 
             for (dest, thrown) in moves {
@@ -153,24 +119,37 @@ fn part1() -> std::io::Result<i64> {
                 counts[new_monkey.name] += 1;
             }
         }
+    }
+    counts.sort();
+    let monkey_business = counts.iter().rev().take(2).product();
 
-        for m in &monkeys {
-            println!("Monkey {}: {:?}", m.name, m.items);
+    Ok(monkey_business)
+}
+
+fn part2() -> std::io::Result<i64> {
+    let lines = read_lines("./input.txt")?;
+    let mut monkeys = parse_monkeys(lines);
+    let mut counts = vec![0; monkeys.len()];
+
+    let modulus = monkeys.iter().map(|m| m.test).product();
+
+    for _ in 1..=10_000 {
+        for i in 0..monkeys.len() {
+            let new_monkey = monkeys[i].clone();
+            let moves = new_monkey.moves(Worry::Unreduced, modulus);
+            monkeys[i].items.clear();
+
+            for (dest, thrown) in moves {
+                monkeys[dest].accept(thrown);
+                counts[new_monkey.name] += 1;
+            }
         }
     }
 
-    println!("counts: {counts:?}");
     counts.sort();
-    let result = counts.iter().rev().take(2).product();
+    let monkey_business = counts.iter().rev().take(2).product();
 
-    Ok(result)
-}
-
-fn part2() -> std::io::Result<()> {
-    let lines = read_lines("./input_smol.txt")?;
-    let _monkeys = parse_monkeys(lines);
-
-    Ok(())
+    Ok(monkey_business)
 }
 
 fn parse_monkeys(lines: std::io::Lines<BufReader<File>>) -> Vec<Monkey> {
