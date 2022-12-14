@@ -87,21 +87,18 @@ impl Monkey {
         self.items
             .iter()
             .map(|item| {
-                let mut thrown = self.inspect(*item, worry);
+                let thrown = self.inspect(*item, worry, modulus);
                 let dest = self.test_divisible(thrown);
-                if worry == Worry::Unreduced {
-                    thrown %= modulus;
-                }
                 (dest, thrown)
             })
             .collect()
     }
 
-    fn inspect(&self, item: i64, worry: Worry) -> i64 {
+    fn inspect(&self, item: i64, worry: Worry, modulus: i64) -> i64 {
         let inspection_result = self.apply_operation(item);
         match worry {
             Worry::Reduced => inspection_result / 3,
-            Worry::Unreduced => inspection_result,
+            Worry::Unreduced => inspection_result % modulus
         }
     }
 
