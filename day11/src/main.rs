@@ -18,6 +18,18 @@ enum Sign {
     Divide,
 }
 
+impl Sign {
+    fn from(s: &str) -> Option<Sign> {
+        match s {
+            "+" => Some(Sign::Plus),
+            "-" => Some(Sign::Minus),
+            "/" => Some(Sign::Divide),
+            "*" => Some(Sign::Multiply),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 enum Operand {
     Old,
@@ -37,6 +49,21 @@ enum MonkeyField {
     Test,
     IfTrue,
     IfFalse,
+    LineBreak,
+}
+
+impl MonkeyField {
+    fn from(counter: usize) -> MonkeyField {
+        match counter {
+            0 => MonkeyField::Name,
+            1 => MonkeyField::Items,
+            2 => MonkeyField::Operation,
+            3 => MonkeyField::Test,
+            4 => MonkeyField::IfTrue,
+            5 => MonkeyField::IfFalse,
+            _ => MonkeyField::LineBreak,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -169,26 +196,21 @@ fn parse_monkeys(lines: std::io::Lines<BufReader<File>>) -> Vec<Monkey> {
     for line in lines.flatten() {
         // the most bargain basement parsing you'll see this week
         // because reading more than a line at a time is too easy =P
-        match counter {
-            _ if counter == MonkeyField::Name as usize => {
+        let field = MonkeyField::from(counter);
+        match field {
+            MonkeyField::Name => {
                 name = monkeys.len();
             }
-            _ if counter == MonkeyField::Items as usize => {
+            MonkeyField::Items => {
                 if let Some((_, end)) = line.split_once(": ") {
                     end.split(", ")
                         .for_each(|i| items.push(i.parse::<i64>().unwrap()));
                 }
             }
-            _ if counter == MonkeyField::Operation as usize => {
+            MonkeyField::Operation => {
                 if let Some((_, end)) = line.split_once("old ") {
                     if let Some((s, o)) = end.split_once(' ') {
-                        let sign = match s {
-                            "+" => Sign::Plus,
-                            "-" => Sign::Minus,
-                            "/" => Sign::Divide,
-                            "*" => Sign::Multiply,
-                            _ => unreachable!(),
-                        };
+                        let sign = Sign::from(s).unwrap();
                         let operand = match o {
                             "old" => Operand::Old,
                             _ => Operand::Number(o.parse::<i64>().unwrap()),
@@ -197,22 +219,22 @@ fn parse_monkeys(lines: std::io::Lines<BufReader<File>>) -> Vec<Monkey> {
                     }
                 }
             }
-            _ if counter == MonkeyField::Test as usize => {
+            MonkeyField::Test => {
                 if let Some((_, divisor)) = line.split_once("by ") {
                     test = divisor.parse::<i64>().unwrap();
                 }
             }
-            _ if counter == MonkeyField::IfTrue as usize => {
+            MonkeyField::IfTrue => {
                 if let Some((_, monkey)) = line.split_once("monkey ") {
                     if_true = monkey.parse::<usize>().unwrap();
                 }
             }
-            _ if counter == MonkeyField::IfFalse as usize => {
+            MonkeyField::IfFalse => {
                 if let Some((_, monkey)) = line.split_once("monkey ") {
                     if_false = monkey.parse::<usize>().unwrap();
                 }
             }
-            _ => {
+            MonkeyField::LineBreak => {
                 monkeys.push(Monkey {
                     name,
                     items,
