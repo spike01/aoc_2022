@@ -161,7 +161,6 @@ fn part1() -> std::io::Result<usize> {
     let edge_length = 1;
 
     loop {
-        let mut temp = Vec::new();
         if unvisited.contains(&current) {
             for neighbour in current.valid_neighbours(&heightmap) {
                 let distance = if current.distance + edge_length < neighbour.distance {
@@ -174,7 +173,6 @@ fn part1() -> std::io::Result<usize> {
                     ..*neighbour
                 };
                 queue.push_back(adjusted_distance);
-                temp.push(adjusted_distance.distance);
             }
             // 4. When we are done considering all of the unvisited neighbors of the current node, mark the
             //    current node as visited and remove it from the unvisited set. A visited node will never
