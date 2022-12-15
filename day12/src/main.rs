@@ -208,11 +208,10 @@ fn part1() -> std::io::Result<usize> {
                 } else {
                     neighbour.distance
                 };
-                let adjusted_distance = Position {
+                queue.push_back(Position {
                     distance,
                     ..*neighbour
-                };
-                queue.push_back(adjusted_distance);
+                });
             }
             // 4. When we are done considering all of the unvisited neighbors of the current node, mark the
             //    current node as visited and remove it from the unvisited set. A visited node will never
@@ -231,13 +230,13 @@ fn part1() -> std::io::Result<usize> {
             return Ok(current.distance);
         }
         if queue.is_empty() {
-            unreachable!();
+            unreachable!("I was promised a solution!");
         }
 
         // 6. Otherwise, select the unvisited node that is marked with the smallest tentative distance,
         //    set it as the new current node, and go back to step 3.
         current = queue.pop_front().unwrap();
-    }
+    } // end of loop
 }
 
 fn part2() -> std::io::Result<usize> {
