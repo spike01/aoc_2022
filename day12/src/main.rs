@@ -132,7 +132,7 @@ fn part1() -> std::io::Result<usize> {
         heightmap.push(row);
     }
 
-    // Dijkstra's algorithm
+    // Dijkstra's algorithm (implemented badly from Wikipedia!)
     // 1. Mark all nodes unvisited. Create a set of all the unvisited nodes called the unvisited
     //    set.
     let mut unvisited: HashSet<&Position> = heightmap.iter().flatten().collect();
@@ -142,8 +142,7 @@ fn part1() -> std::io::Result<usize> {
     //    a node v is the length of the shortest path discovered so far between the node v and the
     //    starting node. Since initially no path is known to any other vertex than the source itself
     //    (which is a path of length zero), all other tentative distances are initially set to
-    //    infinity. Set the initial node as current.[16]
-
+    //    infinity. Set the initial node as current.
     let initial = &heightmap[start_pos.y][start_pos.x];
     let mut current = Position {
         distance: 0,
@@ -181,7 +180,7 @@ fn part1() -> std::io::Result<usize> {
             //    initial node first' so any visits after would have a greater distance).
             unvisited.remove(&current);
         }
-        //
+
         // 5. If the destination node has been marked visited (when planning a route between two
         //    specific nodes) or if the smallest tentative distance among the nodes in the unvisited
         //    set is infinity (when planning a complete traversal; occurs when there is no connection
@@ -190,6 +189,10 @@ fn part1() -> std::io::Result<usize> {
         if current.x == end_pos.x && current.y == end_pos.y {
             return Ok(current.distance);
         }
+        if queue.is_empty() {
+            unreachable!();
+        }
+
         // 6. Otherwise, select the unvisited node that is marked with the smallest tentative distance,
         //    set it as the new current node, and go back to step 3.
         current = queue.pop_front().unwrap();
