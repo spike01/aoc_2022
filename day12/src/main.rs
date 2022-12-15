@@ -8,7 +8,7 @@ fn main() -> std::io::Result<()> {
     println!("===part1===");
     println!("{}", part1()?);
     println!("===part2===");
-    part2()?;
+    println!("{}", part2()?);
     Ok(())
 }
 
@@ -73,6 +73,47 @@ impl Position {
         if let Some(row) = heightmap.get(self.y + 1) {
             if let Some(down) = row.get(self.x) {
                 if down.height <= self.height + 1 {
+                    neighbours.push(down);
+                }
+            }
+        }
+        neighbours
+    }
+
+    fn valid_downward_neighbours<'a>(&'a self, heightmap: &'a [Vec<Position>]) -> Vec<&Position> {
+        let mut neighbours = Vec::new();
+        // left
+        if let Some(row) = heightmap.get(self.y) {
+            if let Some(x) = self.x.checked_sub(1) {
+                if let Some(left) = row.get(x) {
+                    if left.height >= self.height - 1 {
+                        neighbours.push(left);
+                    }
+                }
+            }
+        }
+        // right
+        if let Some(row) = heightmap.get(self.y) {
+            if let Some(right) = row.get(self.x + 1) {
+                if right.height >= self.height - 1 {
+                    neighbours.push(right);
+                }
+            }
+        }
+        // up
+        if let Some(y) = self.y.checked_sub(1) {
+            if let Some(row) = heightmap.get(y) {
+                if let Some(up) = row.get(self.x) {
+                    if up.height >= self.height - 1 {
+                        neighbours.push(up);
+                    }
+                }
+            }
+        }
+        // down
+        if let Some(row) = heightmap.get(self.y + 1) {
+            if let Some(down) = row.get(self.x) {
+                if down.height >= self.height - 1 {
                     neighbours.push(down);
                 }
             }
@@ -199,14 +240,83 @@ fn part1() -> std::io::Result<usize> {
     }
 }
 
-fn part2() -> std::io::Result<()> {
-    let lines = read_lines("./input_smol.txt")?;
+fn part2() -> std::io::Result<usize> {
+    let lines = read_lines("./input.txt")?;
 
-    for line in lines.flatten() {
-        println!("{line}");
+    let mut heightmap: Vec<Vec<Position>> = Vec::new();
+    let mut start_pos = Position {
+        distance: 0,
+        height: 0,
+        x: 0,
+        y: 0,
+    };
+
+    for (y, line) in lines.flatten().enumerate() {
+        let mut row: Vec<Position> = Vec::new();
+        for (x, height) in line.chars().enumerate() {
+            let h = match height {
+                'S' => 'a' as u32,
+                'E' => {
+                    start_pos = Position {
+                        x,
+                        y,
+                        height: 'z' as u32,
+                        distance: 0,
+                    };
+                    'z' as u32
+                }
+                _ => height as u32,
+            };
+            row.push(Position {
+                height: h,
+                x,
+                y,
+                distance: usize::MAX,
+            });
+        }
+        heightmap.push(row);
     }
 
-    Ok(())
+    let mut unvisited: HashSet<&Position> = heightmap.iter().flatten().collect();
+    let mut steps = Vec::new();
+
+    let initial = &heightmap[start_pos.y][start_pos.x];
+    let mut current = Position {
+        distance: 0,
+        ..*initial
+    };
+
+    let mut queue = VecDeque::new();
+    let edge_length = 1;
+
+    loop {
+        if unvisited.contains(&current) {
+            for neighbour in current.valid_downward_neighbours(&heightmap) {
+                let distance = if current.distance + edge_length < neighbour.distance {
+                    current.distance + edge_length
+                } else {
+                    neighbour.distance
+                };
+                let adjusted_distance = Position {
+                    distance,
+                    ..*neighbour
+                };
+                queue.push_back(adjusted_distance);
+            }
+            unvisited.remove(&current);
+        }
+
+        if current.height == 'a' as u32 {
+            steps.push(current.distance);
+        }
+        if queue.is_empty() {
+           break;
+        }
+
+        current = queue.pop_front().unwrap();
+    }
+
+    Ok(*steps.iter().min().unwrap())
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
