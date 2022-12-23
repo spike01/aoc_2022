@@ -22,48 +22,53 @@ impl List {
         Nil
     }
 
-    fn cons(self, val: i32) -> List {
-       Cons(val, Box::new(self))
+    fn cons(val: i32, list: List) -> List {
+       Cons(val, Box::new(list))
     }
 
     // not working yet
-    fn append(&self, list: List) -> List {
-       if self.is_empty() {
-            return list;
+    fn append(list1: List, list2: List) -> List {
+       if Self::is_empty(&list1) {
+            return list2;
        }
-       // (cons (car ls1) (append (cdr ls1) ls2)))))
-       Self::append(&self.tail().unwrap(), list).cons(self.head().unwrap())
+       // (cons
+       //   (car ls1)
+       //   (append (cdr ls1) ls2)))))
+       Self::cons(
+           Self::head(&list1).unwrap(),
+           Self::append(Self::tail(&list1).unwrap(), list2)
+       )
     }
 
-    fn is_empty(&self) -> bool {
-       match self {
+    fn is_empty(list: &List) -> bool {
+       match list {
           Nil => true,
           _ => false
        }
     }
 
     // car
-    fn head(&self) -> Option<i32> {
-       match self {
+    fn head(list: &List) -> Option<i32> {
+       match list {
          Cons(i, _) => Some(*i),
          Nil => None
        }
     }
 
     // cdr
-    fn tail(&self) -> Option<List> {
-        match self {
+    fn tail(list: &List) -> Option<List> {
+        match list {
             Cons(_, list) => Some(*list.clone()),
             Nil => None
         }
     }
 
-    fn last(self) -> Option<i32> {
-        let mut current = self;
-        while let Some(cons) = current.tail() {
+    fn last(list: List) -> Option<i32> {
+        let mut current = list;
+        while let Some(cons) = Self::tail(&current) {
             current = cons;
         }
-        current.head()
+        Self::head(&current)
     }
 }
 
@@ -138,7 +143,7 @@ fn list_from(line: &str) -> List {
         match token {
             Token::Open => (),
             Token::Close => (),
-            Token::Value(i) => list = list.append(List::empty().cons(*i)),
+            Token::Value(i) => list = List::append(list, List::cons(*i, List::empty())),
         }
     }
 
