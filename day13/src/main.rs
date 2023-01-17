@@ -39,6 +39,7 @@ fn part1() -> std::io::Result<usize> {
 
         println!("{list1:?}");
         println!("{list2:?}");
+        println!("");
 
         idx += 1;
 
@@ -116,7 +117,32 @@ impl List {
     }
 
     fn are_ordered(list1: &List, list2: &List) -> bool {
-        true
+        let mut head1 = Self::head(&list1);
+        let mut head2 = Self::head(&list2);
+        let mut tail1 = Self::tail(&list1);
+        let mut tail2 = Self::tail(&list2);
+        loop {
+            match (head1, head2) {
+                (Some(Value::Int(l)), Some(Value::Int(r))) => {
+                    if l > r {
+                        return false;
+                    }
+                },
+                (Some(Value::NestedList(l)), Some(Value::NestedList(r))) => {
+                    return Self::are_ordered(&l,&r);
+                },
+                (Some(Value::Int(l)), Some(Value::NestedList(r))) => return true,
+                (Some(Value::NestedList(l)), Some(Value::Int(r))) => return true,
+                (None, None) => return true,
+                (_, _) => return true
+            }
+            let unwrapped1 = tail1.unwrap();
+            let unwrapped2 = tail2.unwrap();
+            head1 = Self::head(&unwrapped1);
+            head2 = Self::head(&unwrapped2);
+            tail1 = Self::tail(&unwrapped1);
+            tail2 = Self::tail(&unwrapped2);
+        }
     }
 }
 
@@ -128,6 +154,11 @@ enum Token {
 }
 
 fn list_from(line: &str) -> List {
+    let tokens = tokenize(line);
+    parse(&tokens)
+}
+
+fn tokenize(line: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
     let mut current_value = Vec::new();
 
@@ -153,18 +184,52 @@ fn list_from(line: &str) -> List {
             x => current_value.push(x),
         }
     }
+    tokens
+}
 
-    let mut list = List::empty();
+fn parse(tokens: &Vec<Token>) -> List {
+    let mut stack = Vec::new();
 
-    for token in &tokens {
+    for token in tokens {
         match token {
-            Token::Open => (),
-            Token::Close => (),
-            Token::Value(i) => list = List::append(list, List::cons(Value::Int(*i), List::empty())),
+            Token::Open => {
+                stack.push(List::empty());
+            },
+            Token::Close => {
+                if stack.len() == 1 {
+                    return stack.pop().unwrap();
+                }
+                let inner_list = stack.pop().unwrap();
+                let outer_list = stack.pop().unwrap();
+
+                if List::is_empty(&outer_list) {
+                    stack.push(
+                        List::cons(
+                            Value::NestedList(Box::new(inner_list)),
+                            List::empty()
+                        )
+                    )
+                } else {
+                    stack.push(
+                        List::cons(
+                            Value::NestedList(Box::new(outer_list)),
+                            inner_list)
+                        );
+                }
+            },
+            Token::Value(i) => {
+                if !stack.is_empty() {
+                    let current_list = stack.pop().unwrap();
+                    let appended_lists = List::append(
+                            current_list,
+                            List::cons(Value::Int(*i), List::empty())
+                    );
+                    stack.push(appended_lists);
+                }
+            }
         }
     }
-
-    list
+    List::empty()
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
